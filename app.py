@@ -3,9 +3,15 @@ import streamlit as st
 import pandas as pd
 
 # تحميل قاعدة البيانات
-@st.cache_data # هذه الميزة تجعل التحميل سريعاً جداً
+تحسين تحميل البيانات (أضفه في الأعلى)
+@st.cache_data
 def load_data():
-    return pd.read_excel("Electrical_Materials_Inventory.xlsx")
+    data = pd.read_excel("Electrical_Materials_Inventory.xlsx")
+    # تحويل الأعمدة المطلوبة إلى أرقام وحذف الأسطر الفارغة لضمان عدم حدوث TypeError
+    cols_to_fix = ["المساحة m2", "سلك 1.5 (لفة)", "سلك 2.5 (لفة)", "الغرف"]
+    for col in cols_to_fix:
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+    return data.dropna(subset=cols_to_fix)
 
 df = load_data()
 
@@ -32,8 +38,6 @@ with st.sidebar:
     # أسعار لوحات التوزيع
     st.subheader("📦 أسعار لوحات التوزيع")
     p_8p = st.number_input("سعر لوحة 8P", value=4000)
-    p_12p = st.number_input("سعر لوحة 12P", value=5000)
-    p_24p = st.number_input("سعر لوحة 24P", value=7000)
     
     st.info("💡 يمكنك تعديل الأسعار حسب منطقتك قبل الضغط على حساب.")
 
@@ -64,13 +68,21 @@ if submit:
 
     # 2. حساب النتائج بناءً على نسب الجدول (التناسب الطردي)
     # نحسب كم متر يحتاج كل 1 متر مربع بناءً على أفضل مطابقة
-    ratio_15 = best_match["سلك 1.5 (لفة)"] / best_match["المساحة m2"]
-    ratio_25 = best_match["سلك 2.5 (لفة)"] / best_match["المساحة m2"]
-    
+    :
+    # البحث عن أقرب حالة
+    df["score"] = (abs(df["الغرف"] - rooms) + abs(df["المساحة m2"] - massa7a))
+    best_match = df.loc[df["score"].idxmin()]
+
+    # التأكد من أن المقام ليس صفراً لتجنب أخطاء القسمة
+    if best_match["المساحة m2"] > 0:
+        ratio_15 = float(best_match["سلك 1.5 (لفة)"]) / float(best_match["المساحة m2"])
+        ratio_25 = float(best_match["سلك 2.5 (لفة)"]) / float(best_match["المساحة m2"])
+    else:
+        ratio_15, ratio_25 = 0, 0
+ 
     # تطبيق النسب على مساحة المستخدم الحالية
     calc_wire_15 = round(ratio_15 * massa7a, 2)
     calc_wire_25 = round(ratio_25 * massa7a, 2)
-    
     # حساب العلب واللوحة (منطق تقني)
     total_points = s_normal + s_ground + l_normal + l_spot
     pots = total_points
