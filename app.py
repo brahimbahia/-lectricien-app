@@ -106,13 +106,17 @@ if submit:
         calc_wire_25 = round(ratio_25 * massa7a, 2)
 
         # ── اختيار اللوحة ───────────────────────────────────────────────────
-        breaker_slots = rooms + 4
-        if breaker_slots <= 8:
-            p_tableau = p_8p
-        elif breaker_slots <= 12:
-            p_tableau = p_12p
-        else:
-            p_tableau = p_24p
+        # اختيار لوحة الكهرباء حسب العدد
+if breaker_slots <= 8:
+    p_tableau = p_8p
+elif breaker_slots <= 10:
+    p_tableau = p_10p
+elif breaker_slots <= 12:
+    p_tableau = p_12p
+elif breaker_slots <= 16:
+    p_tableau = p_16p
+else:
+    p_tableau = p_24p
 
         # ── الحساب المالي ────────────────────────────────────────────────────
         total_points = s_normal + s_ground + l_normal + l_spot
@@ -161,7 +165,7 @@ if submit:
 
         st.markdown("""
         ---
-        **المطوّرة:** باهية إبراهيم  
+        **المطوّر:** باهية إبراهيم  
         **التخصص:** ماستر هندسة كهربائية  
         **للتواصل وتطوير البيانات:** [0784178506](tel:0784178506)
         """)
