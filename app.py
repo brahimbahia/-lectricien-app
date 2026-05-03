@@ -81,7 +81,7 @@ if submit:
     total_cost = (total_points * p_socket) + (rooms * p_jb) + p_12p # مثال للوحة
 
     # --- بداية عرض النتائج في التطبيق ---
-        st.success("✅ تم توليد النتائج بناءً على معايير المشاريع السابقة")
+    st.success("✅ تم توليد النتائج بناءً على معايير المشاريع السابقة")
     
     col1, col2 = st.columns(2)
     with col1:
