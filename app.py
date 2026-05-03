@@ -1,9 +1,23 @@
 import streamlit as st
+import streamlit as st
+st.set_page_config(page_title="حاسبة الكهرباء المتطورة", layout="centered")
+
 
 # إعدادات الصفحة لتظهر كالتطبيق
 st.set_page_config(page_title="حاسبة الكهرباء الاحترافية", layout="centered")
 
 st.title("⚡ نظام حساب الكميات والمواد")
+with st.sidebar:
+    st.header("⚙️ إعدادات الأسعار (دج)")
+    # --- كود أسعار المقابس والمصابيح يوضع هنا ---
+    st.markdown("---")
+    st.subheader("📦 أسعار لوحات التوزيع")
+    p_8p = st.number_input("سعر لوحة 8P", value=4000)
+    p_12p = st.number_input("سعر لوحة 12P", value=5000)
+    p_24p = st.number_input("سعر لوحة 24P", value=7000)
+
+    # --- كود أسعار لوحات التوزيع (الذي أعطيتك إياه مؤخراً) يوضع هنا أيضاً ---
+
 
 # المرحلة 1: المدخلات (حسب شروطك تماماً)
 with st.form("main_form"):
