@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 
 # تحميل قاعدة البيانات
-تحسين تحميل البيانات (أضفه في الأعلى)
 @st.cache_data
 def load_data():
     data = pd.read_excel("Electrical_Materials_Inventory.xlsx")
