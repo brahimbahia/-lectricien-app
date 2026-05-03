@@ -1,20 +1,41 @@
+
 import streamlit as st
-import streamlit as st
+import pandas as pd
+
+# تحميل قاعدة البيانات
+@st.cache_data # هذه الميزة تجعل التحميل سريعاً جداً
+def load_data():
+    return pd.read_excel("Electrical_Materials_Inventory.xlsx")
+
+df = load_data()
+
+
+
 st.set_page_config(page_title="حاسبة الكهرباء المتطورة", layout="centered")
 
 
 # إعدادات الصفحة لتظهر كالتطبيق
-st.set_page_config(page_title="حاسبة الكهرباء الاحترافية", layout="centered")
+# 1. العنوان يوضع هنا (خارج الـ sidebar ليكون في وسط الشاشة)
+st.title("⚡ نظام تقدير الكميات والتكاليف")
 
-st.title("⚡ نظام حساب الكميات والمواد")
+# 2. إعدادات القائمة الجانبية
 with st.sidebar:
     st.header("⚙️ إعدادات الأسعار (دج)")
-    # --- كود أسعار المقابس والمصابيح يوضع هنا ---
+    
+    # أسعار القطع الأساسية
+    p_socket = st.number_input("سعر المقبس الواحد", value=650)
+    p_lamp = st.number_input("سعر المصباح الواحد", value=700)
+    p_jb = st.number_input("سعر علبة التفريع", value=800)
+    
     st.markdown("---")
+    
+    # أسعار لوحات التوزيع
     st.subheader("📦 أسعار لوحات التوزيع")
     p_8p = st.number_input("سعر لوحة 8P", value=4000)
     p_12p = st.number_input("سعر لوحة 12P", value=5000)
     p_24p = st.number_input("سعر لوحة 24P", value=7000)
+    
+    st.info("💡 يمكنك تعديل الأسعار حسب منطقتك قبل الضغط على حساب.")
 
     # --- كود أسعار لوحات التوزيع (الذي أعطيتك إياه مؤخراً) يوضع هنا أيضاً ---
 
@@ -37,36 +58,42 @@ with st.form("main_form"):
 
 # المرحلة 2: المخرجات (باقي مواد البناء)
 if submit:
-    # منطق الحساب بناءً على مدخلاتك
-    total_sockets = s_normal + s_ground
-    total_lamps = l_normal + l_spot
-    
-    # تقدير الأسلاك (بالأمتار)
-    wire_15 = (l_normal * 7) + (l_spot * 4)
-    wire_25 = (s_normal * 10) + (s_ground * 12)
-    
-    # تقدير الأنابيب والعلب
-    tubes_16 = massa7a * 1.5
-    pots = total_sockets + total_lamps
-    
-    st.divider()
-    st.subheader("🏗️ قائمة مواد البناء المطلوبة:")
-    
-    res1, res2 = st.columns(2)
-    with res1:
-        st.write(f"🔹 **الأسلاك:**")
-        st.write(f"- سلك 1.5 مم: {wire_15} متر")
-        st.write(f"- سلك 2.5 مم: {wire_25} متر")
-        st.write(f"🔹 **الأنابيب:**")
-        st.write(f"- خرطوم 16 مم: {int(tubes_16)} متر")
-    
-    with res2:
-        st.write(f"🔹 **العلب واللوحات:**")
-        st.write(f"- علب تثبيت (Pot): {pots} قطعة")
-        st.write(f"- علب تفريع (BD): {rooms} قطع")
-        st.write(f"- لوحة توزيع: {rooms + 4} قواطع")
+    # 1. البحث عن أقرب حالة في الجدول (الذكاء الاصطناعي)
+    df["score"] = (abs(df["الغرف"] - rooms) + abs(df["المساحة m2"] - massa7a))
+    best_match = df.loc[df["score"].idxmin()]
 
-    st.success("✅ تم حساب الكميات بناءً على المعايير التقنية الجزائرية.")
+    # 2. حساب النتائج بناءً على نسب الجدول (التناسب الطردي)
+    # نحسب كم متر يحتاج كل 1 متر مربع بناءً على أفضل مطابقة
+    ratio_15 = best_match["سلك 1.5 (لفة)"] / best_match["المساحة m2"]
+    ratio_25 = best_match["سلك 2.5 (لفة)"] / best_match["المساحة m2"]
+    
+    # تطبيق النسب على مساحة المستخدم الحالية
+    calc_wire_15 = round(ratio_15 * massa7a, 2)
+    calc_wire_25 = round(ratio_25 * massa7a, 2)
+    
+    # حساب العلب واللوحة (منطق تقني)
+    total_points = s_normal + s_ground + l_normal + l_spot
+    pots = total_points
+    breaker_slots = rooms + 4
+    
+    # 3. الحساب المالي (باستخدام الأسعار من الـ Sidebar)
+    # ملاحظة: p_socket و p_lamp و p_jb معرفة في الـ Sidebar
+    total_cost = (total_points * p_socket) + (rooms * p_jb) + p_12p # مثال للوحة
+
+    # --- بداية عرض النتائج في التطبيق ---
+        st.success("✅ تم توليد النتائج بناءً على معايير المشاريع السابقة")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("سلك 1.5 مم (محسوب)", f"{calculated_wire15} لفة")
+    with col2:
+        st.metric("سلك 2.5 مم (محسوب)", f"{calculated_wire25} لفة")
+        
+    st.write(f"🔹 **علب التثبيت المطلوبة فعلياً:** {calculated_pots} قطعة")
+
+    
+    
+
         # ... (بقية الكود السابق)
 
     # إضافة معلومات التواصل الخاصة بك
