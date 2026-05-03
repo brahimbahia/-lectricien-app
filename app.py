@@ -7,7 +7,6 @@ import numpy as np
 st.set_page_config(page_title="حاسبة الكهرباء المتطورة", layout="centered")
 
 # ─── 2. دالة تنظيف الخلايا ────────────────────────────────────────────────────
-# تتعامل مع قيم مثل "11m"، "03 لفة"، "2 لفة" وتستخرج منها الرقم فقط
 def clean_cell(val):
     if pd.isna(val):
         return np.nan
@@ -57,12 +56,14 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("📦 أسعار لوحات التوزيع")
     p_8p  = st.number_input("سعر لوحة 8P",  value=4000)
+    p_10p = st.number_input("سعر لوحة 10P", value=4500)
     p_12p = st.number_input("سعر لوحة 12P", value=5000)
+    p_16p = st.number_input("سعر لوحة 16P", value=6000)
     p_24p = st.number_input("سعر لوحة 24P", value=7000)
 
     st.info("💡 يمكنك تعديل الأسعار حسب منطقتك قبل الضغط على حساب.")
 
-# ─── 6. مدخلات المشروع ───────────────────────────────────────────────────────
+# ─── 6. مدخلات المشروع ────────────────────────────────────────────────────────
 with st.form("main_form"):
     st.subheader("📝 مدخلات المشروع")
 
@@ -71,11 +72,11 @@ with st.form("main_form"):
 
     col1, col2 = st.columns(2)
     with col1:
-        s_normal = st.number_input("مقابس عادية (L+N)",   min_value=0, value=4)
-        l_normal = st.number_input("مصابيح عادية",         min_value=0, value=4)
+        s_normal = st.number_input("مقابس عادية (L+N)",  min_value=0, value=4)
+        l_normal = st.number_input("مصابيح عادية",        min_value=0, value=4)
     with col2:
-        s_ground = st.number_input("مقابس أرضي (L+N+T)",  min_value=0, value=6)
-        l_spot   = st.number_input("مصابيح SPOT",          min_value=0, value=8)
+        s_ground = st.number_input("مقابس أرضي (L+N+T)", min_value=0, value=6)
+        l_spot   = st.number_input("مصابيح SPOT",         min_value=0, value=8)
 
     submit = st.form_submit_button("حساب كميات مواد البناء")
 
@@ -86,7 +87,7 @@ if submit:
     else:
         # ── البحث عن أقرب حالة ──────────────────────────────────────────────
         scores = abs(df["الغرف"] - rooms) + abs(df["المساحة m2"] - massa7a)
-        scores = scores.dropna()                          # ← الإصلاح الأساسي
+        scores = scores.dropna()
 
         if scores.empty:
             st.error("⚠️ تعذّر إيجاد مشروع مرجعي — تحقق من بيانات Excel.")
@@ -105,18 +106,18 @@ if submit:
         calc_wire_15 = round(ratio_15 * massa7a, 2)
         calc_wire_25 = round(ratio_25 * massa7a, 2)
 
-        # ── اختيار اللوحة ───────────────────────────────────────────────────
-        # اختيار لوحة الكهرباء حسب العدد
-if breaker_slots <= 8:
-    p_tableau = p_8p
-elif breaker_slots <= 10:
-    p_tableau = p_10p
-elif breaker_slots <= 12:
-    p_tableau = p_12p
-elif breaker_slots <= 16:
-    p_tableau = p_16p
-else:
-    p_tableau = p_24p
+        # ── اختيار لوحة الكهرباء حسب عدد القواطع ───────────────────────────
+        breaker_slots = rooms + 4
+        if breaker_slots <= 8:
+            p_tableau = p_8p
+        elif breaker_slots <= 10:
+            p_tableau = p_10p
+        elif breaker_slots <= 12:
+            p_tableau = p_12p
+        elif breaker_slots <= 16:
+            p_tableau = p_16p
+        else:
+            p_tableau = p_24p
 
         # ── الحساب المالي ────────────────────────────────────────────────────
         total_points = s_normal + s_ground + l_normal + l_spot
@@ -149,12 +150,12 @@ else:
         st.subheader("💰 التقدير المالي")
 
         cost_df = pd.DataFrame([
-            ("مقابس أرضي (L+N+T)",  f"{s_ground * p_socket_lnt:,} دج"),
-            ("مقابس عادية (L+N)",   f"{s_normal * p_socket_ln:,} دج"),
-            ("مصابيح SPOT",          f"{l_spot * p_lamp_spot:,} دج"),
-            ("مصابيح عادية",         f"{l_normal * p_lamp_std:,} دج"),
-            ("علب التفريع",          f"{rooms * p_jb:,} دج"),
-            (f"لوحة توزيع",          f"{p_tableau:,} دج"),
+            ("مقابس أرضي (L+N+T)", f"{s_ground * p_socket_lnt:,} دج"),
+            ("مقابس عادية (L+N)",  f"{s_normal * p_socket_ln:,} دج"),
+            ("مصابيح SPOT",         f"{l_spot * p_lamp_spot:,} دج"),
+            ("مصابيح عادية",        f"{l_normal * p_lamp_std:,} دج"),
+            ("علب التفريع",         f"{rooms * p_jb:,} دج"),
+            ("لوحة توزيع",          f"{p_tableau:,} دج"),
         ], columns=["البند", "التكلفة"])
         st.dataframe(cost_df, use_container_width=True, hide_index=True)
 
